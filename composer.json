@@ -1,0 +1,16 @@
+{
+  "name": "huanl-php/container",
+  "description": "a dependency injection container",
+  "authors": [
+    {
+      "name": "CodFrm",
+      "email": "code.farmer@qq.com"
+    }
+  ],
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "HuanL\\Container\\": ""
+    }
+  }
+}
