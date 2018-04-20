@@ -2,6 +2,7 @@
 
 namespace HuanL\Container\Tests;
 
+use DeepCopyTest\TypeMatcher\IA;
 use HuanL\Container\Container;
 use PHPUnit\Framework\TestCase;
 
@@ -21,6 +22,7 @@ class ContainerTest extends TestCase {
         $this->container->bind(classA::class);
         $classA = $this->container->make(classA::class);
         $this->assertInstanceOf(classA::class, $classA);
+        $this->assertNotSame($classA, $this->container->make(classA::class));
     }
 
     /**
@@ -33,7 +35,7 @@ class ContainerTest extends TestCase {
         $this->container->bind(classB::class);
         $classB = $this->container->make(classB::class);
         $this->assertInstanceOf(classB::class, $classB);
-        $this->assertEquals($classB->test(), 1);
+        $this->assertEquals($classB->test(), 2);
     }
 
     /**
@@ -41,24 +43,109 @@ class ContainerTest extends TestCase {
      */
     public function testSingleton() {
         $this->container->singleton(classA::class);
-        $classB = $this->container->make(classB::class,['def'=>0]);
+
+        $this->assertSame($this->container->make(classA::class), $this->container->make(classA::class));
+
+        $classB = $this->container->make(classB::class, ['def' => 0]);
         $this->assertInstanceOf(classB::class, $classB);
         $this->assertEquals($classB->test(), 1);
 
-        $classB2 = $this->container->make(classB::class,['def'=>2]);
+        $classB2 = $this->container->make(classB::class, ['def' => 2]);
         $this->assertInstanceOf(classB::class, $classB2);
         $this->assertEquals($classB2->test(), 4);
+
     }
 
     /**
      * 测试实例
      */
     public function testInstance() {
-        $this->container->instance('ins_one', new classB(new classA(),2));
-       $classB= $this->container->make('ins_one');
-       $this->assertEquals($classB->test(),3);
+        $this->container->instance('ins_one', new classB(new classA(), 2));
+        $classB = $this->container->make('ins_one');
+        $this->assertEquals($classB->test(), 3);
+        $this->assertSame($classB, $this->container->make('ins_one'));
     }
+
+    /**
+     * 接口依赖
+     */
+    public function testInterface() {
+        $this->container->bind(ISum::class, classSum::class);
+        $classC = $this->container->make(classC::class);
+        $this->assertEquals($classC->interfaceSum(2), 4);
+        return $classC;
+    }
+
+    /**
+     * 多层依赖
+     * @depends testInterface
+     */
+    public function testMultiLevelDependency($classC) {
+        $this->container->bind(ISum::class, classSum::class);
+        $this->container->bind(classD::class);
+        $d = $this->container->make(classD::class);
+        $this->assertInstanceOf(classD::class, $d);
+    }
+
+    /**
+     * 匿名函数测试
+     */
+    public function testAnonymous() {
+        $text1 = "输出啊";
+        $this->container->bind('test', function () use ($text1) {
+            return $text1;
+        });
+        $tmp = $this->container->make('test');
+        $this->assertEquals($tmp, $text1);
+    }
+
+    /**
+     * 别名测试
+     */
+    public function testAlias() {
+        $this->container->bind(classA::class);
+        $this->container->alias('a', classA::class);
+        $this->assertInstanceOf(classA::class, $this->container->make('a'));
+    }
+//
+//    /**
+//     * 多层参数
+//     */
+//    public function testMultiLayerParameters() {
+//        $this->container->bind(parameter2::class);
+//        $p = $this->container->make(parameter2::class, ['p1' => '参数p1', 'p2' => '参数p2']);
+//    }
 }
+//
+//class parameter1 {
+//    private $p1;
+//
+//    public function __construct($p1) {
+//        $this->$param1 = $param1;
+//    }
+//
+//    public function prt1() {
+//        return $this->p1;
+//    }
+//}
+//
+//class parameter2 {
+//    private $p2;
+//    private $param1;
+//
+//    public function __construct(parameter1 $param1, $p2) {
+//        $this->p2 = $p2;
+//        $this->$param1 = $param1;
+//    }
+//
+//    public function prt1() {
+//        return $this->$param1->prt1();
+//    }
+//
+//    public function prt2() {
+//        return $this->p2;
+//    }
+//}
 
 class classA {
     private $a;
@@ -89,3 +176,35 @@ class classB {
         return $this->def + $this->classA->add();
     }
 }
+
+interface ISum {
+    public function sum($a, $b);
+}
+
+class classSum implements ISum {
+    public function sum($a, $b) {
+        // TODO: Implement sum() method.
+        return $a + $b;
+    }
+}
+
+class classC {
+    private $sum;
+
+    public function __construct(ISum $sum) {
+        $this->sum = $sum;
+    }
+
+    public function interfaceSum($a) {
+        return $this->sum->sum($a, $a);
+    }
+}
+
+class classD {
+    private $c;
+
+    public function __construct(classC $c, classB $b) {
+    }
+}
+
+
