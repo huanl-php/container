@@ -7,10 +7,20 @@
       "email": "code.farmer@qq.com"
     }
   ],
-  "require": {},
+  "require": {
+    "php": "^7.1"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^7.1"
+  },
   "autoload": {
     "psr-4": {
       "HuanL\\Container\\": ""
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "HuanL\\Container\\Tests\\": "tests/"
     }
   }
 }
