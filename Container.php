@@ -13,7 +13,7 @@ use LogicException;
  * Class Container
  * @package HuanL\Container
  */
-class Container implements ArrayAccess {
+class Container implements IContainer,ArrayAccess {
 
     /**
      * 实例化列表
@@ -34,7 +34,7 @@ class Container implements ArrayAccess {
     protected $aliases = [];
 
     /**
-     * 将实例绑定到容器
+     * 将抽象类型绑定到容器
      * @param string 抽象类型 $abstract
      * @param mixed 具体实例 $concrete
      * @param bool $unique
