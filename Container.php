@@ -13,7 +13,7 @@ use LogicException;
  * Class Container
  * @package HuanL\Container
  */
-class Container implements IContainer,ArrayAccess {
+class Container implements IContainer, ArrayAccess {
 
     /**
      * 实例化列表

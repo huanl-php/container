@@ -6,7 +6,7 @@ namespace HuanL\Container;
 
 interface IContainer {
     //将抽象类型绑定到容器
-    public function build($abstract, $concrete = null, $unique = false);
+    public function bind($abstract, $concrete = null, $unique = false);
 
     //绑定单例
     public function singleton($abstract, $concrete = null);
