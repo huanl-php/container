@@ -15,5 +15,8 @@ interface IContainer {
     public function instance($abstract, $instance);
 
     //解析抽象类型
-    public function make($abstract, $parameter = []);
+    public function make($abstract,array $parameter = []);
+
+    //调用方法注入参数
+    public function call($callback,array $parameter = []);
 }

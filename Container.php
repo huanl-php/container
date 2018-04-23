@@ -6,6 +6,9 @@ use ArrayAccess;
 use Closure;
 use ReflectionClass;
 use ReflectionParameter;
+use ReflectionFunctionAbstract;
+use ReflectionMethod;
+use ReflectionFunction;
 use LogicException;
 
 /**
@@ -96,7 +99,7 @@ class Container implements IContainer, ArrayAccess {
      * @param array $parameter
      * @return mixed
      */
-    public function make($abstract, $parameter = []) {
+    public function make($abstract, array $parameter = []) {
         $abstract = $this->getAlias($abstract);
         //存在的实例直接返回
         if (isset($this->instances[$abstract])) {
@@ -115,11 +118,84 @@ class Container implements IContainer, ArrayAccess {
     }
 
     /**
+     * 调用方法注入参数
+     * @param mixed $callback
+     * @param array $parameter
+     * @return mixed
+     */
+    public function call($callback, array $parameter = []) {
+        // TODO: Implement call() method.
+        //判断输入的类型,允许4中方法 类名@方法 [实例,方法名] 函数名 匿名函数
+        $reflection = $this->getMethodReflection($callback, $class, $type);
+
+        //获取参数
+        $dependencies = $reflection->getParameters();
+        $args = $this->mergeDependencies($dependencies, $parameter);
+        return $this->callMethod($callback, $args, $reflection, $class, $type);
+    }
+
+    /**
+     * 调用参数
+     * @param $callback
+     * @param $args
+     * @param $reflection
+     * @param $class
+     * @param int $type
+     * @return mixed
+     */
+    protected function callMethod($callback, $args, $reflection, $class, int $type) {
+        if ($type == 1) {
+            return $reflection->invokeArgs($args);
+        } else {
+            return $reflection->invokeArgs($class, $args);
+        }
+    }
+
+    /**
+     * 获取方法反射类型,$type=1为函数,$type=2为 类名@方法 的方法
+     * $type=3为 [实例/类名,方法名]
+     * @param mixed $callbackm
+     * @param mixed $class
+     * @param int $type
+     * @return ReflectionFunction|ReflectionMethod
+     * @throws TypesException
+     * @throws \ReflectionException
+     */
+    protected function getMethodReflection($callback, &$class = null, &$type = 0) {
+        if (is_string($callback)) {
+            //如果是字符串,判断是类名@方法的形式还是 函数名的形式
+            if (($logoPos = strpos($callback, '@')) === false) {
+                //寻找不到@为函数名的方式
+                $reflection = new ReflectionFunction($callback);
+                $type = 1;
+            } else {
+                $class = substr($callback, 0, $logoPos);
+                $reflection = new ReflectionMethod($class,
+                    substr($callback, $logoPos + 1));
+                $class = $this->make($class);
+                $type = 2;
+            }
+        } else if (is_array($callback) && sizeof($callback) == 2) {
+            //数组则判断为 [实例/类名,方法名] 的形式
+            $reflection = new ReflectionMethod($callback[0], $callback[1]);
+            $class = $callback[0];
+            $type = 3;
+        } else if ($callback instanceof Closure) {
+            //匿名函数还用想么?
+            $reflection = new ReflectionFunction($callback);
+            $type = 1;
+        } else {
+            throw new TypesException('Types not allowed to appear');
+        }
+        return $reflection;
+    }
+
+    /**
      * 实例化类型
      * @param $concrete
      * @param array $parameter
      */
-    protected function build($concrete, $parameter = []) {
+    protected function build($concrete, array $parameter = []) {
         //判断是不是匿名函数,是匿名函数则执行匿名函数并返回
         if ($concrete instanceof Closure) {
             return $concrete($this, $parameter);
@@ -166,10 +242,10 @@ class Container implements IContainer, ArrayAccess {
 
     /**
      * 将依赖和传入的参数合并返回一个参数数组
-     * @param $dependencies
+     * @param ReflectionParameter $dependencies
      * @param array $parameter
      */
-    protected function mergeDependencies($dependencies, $parameter = []) {
+    protected function mergeDependencies($dependencies, array $parameter = []) {
         $args = [];
         foreach ($dependencies as $item) {
             //首先判断是否覆盖
@@ -184,7 +260,11 @@ class Container implements IContainer, ArrayAccess {
         return $args;
     }
 
-
+    /**
+     * 处理参数,如果是抽象类型则make没有则返回默认值,再没有返回null
+     * @param ReflectionParameter $reflectionParameter
+     * @return mixed|null
+     */
     protected function dealParam(ReflectionParameter $reflectionParameter) {
         //判断参数类型,如果是类则实例化它,如果有默认值则返回默认值,否则返回一个空的
         if (!is_null($reflectionParameter->getClass())) {
@@ -227,6 +307,7 @@ class Container implements IContainer, ArrayAccess {
     public function isAlias($name) {
         return isset($this->aliases[$name]);
     }
+
 
     public function offsetExists($key) {
         // TODO: Implement offsetExists() method.
