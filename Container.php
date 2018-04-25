@@ -37,6 +37,12 @@ class Container implements IContainer, ArrayAccess {
     protected $aliases = [];
 
     /**
+     * 全局的容器
+     * @var Container
+     */
+    protected static $instance = null;
+
+    /**
      * 将抽象类型绑定到容器
      * @param string 抽象类型 $abstract
      * @param mixed 具体实例 $concrete
@@ -191,6 +197,28 @@ class Container implements IContainer, ArrayAccess {
     }
 
     /**
+     * 获取全局实例
+     * @return Container
+     * @throws InstantiationException
+     */
+    public static function getInstance() {
+        if (is_null(static::$instance)) {
+            throw new InstantiationException('Empty instance');
+        }
+        return static::$instance;
+    }
+
+    /**
+     * 设置全局实例
+     * @param Container $container
+     * @return Container
+     */
+    public static function setInstance(Container $container) {
+        static::$instance = $container;
+        return static::$instance;
+    }
+
+    /**
      * 实例化类型
      * @param $concrete
      * @param array $parameter
@@ -307,8 +335,7 @@ class Container implements IContainer, ArrayAccess {
     public function isAlias($name) {
         return isset($this->aliases[$name]);
     }
-
-
+    
     public function offsetExists($key) {
         // TODO: Implement offsetExists() method.
         return isset($this->bindings[$key]) || isset($this->instances) || $this->isAlias($key);
