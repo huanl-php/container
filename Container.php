@@ -222,6 +222,9 @@ class Container implements IContainer, ArrayAccess {
      * 实例化类型
      * @param $concrete
      * @param array $parameter
+     * @return mixed|null|object
+     * @throws InstantiationException
+     * @throws \ReflectionException
      */
     protected function build($concrete, array $parameter = []) {
         //判断是不是匿名函数,是匿名函数则执行匿名函数并返回
@@ -234,7 +237,6 @@ class Container implements IContainer, ArrayAccess {
         //判断是否可以实例化,不能实例化就炸裂吧,这是存放数据类型的容器
         if (!$ref->isInstantiable()) {
             throw new InstantiationException("Target [$concrete] is not instantiable.");
-            return null;
         }
 
         //获取实例化需要的依赖,无需参数则直接实例化返回
