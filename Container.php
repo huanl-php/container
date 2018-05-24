@@ -42,6 +42,12 @@ class Container implements IContainer, ArrayAccess {
      */
     protected static $instance = null;
 
+    public function __construct() {
+        if (static::$instance == null) {
+            static::setInstance($this);
+        }
+    }
+
     /**
      * 将抽象类型绑定到容器
      * @param string 抽象类型 $abstract
@@ -214,8 +220,7 @@ class Container implements IContainer, ArrayAccess {
      * @return Container
      */
     public static function setInstance(Container $container) {
-        static::$instance = $container;
-        return static::$instance;
+        return static::$instance = $container;
     }
 
     /**
@@ -337,7 +342,7 @@ class Container implements IContainer, ArrayAccess {
     public function isAlias($name) {
         return isset($this->aliases[$name]);
     }
-    
+
     public function offsetExists($key) {
         // TODO: Implement offsetExists() method.
         return isset($this->bindings[$key]) || isset($this->instances) || $this->isAlias($key);
