@@ -159,7 +159,7 @@ class Container implements IContainer, ArrayAccess {
         if ($type == 1) {
             return $reflection->invokeArgs($args);
         } else {
-            return $reflection->invokeArgs($class, $args);
+            return call_user_func_array([$class, $reflection->name], $args);
         }
     }
 
